@@ -8,7 +8,7 @@ Self-hosted feature flags and remote config in a single Go binary on PocketBase.
 ![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/configwire/configwire/blob/main/pb_public/img/banner.png" alt="ConfigWire banner" width="800">
+  <img src="https://github.com/configwire/configwire/blob/main/pb_public/img/banner.png?raw=true" alt="ConfigWire banner" width="800">
 </p>
 
 ## How it works
