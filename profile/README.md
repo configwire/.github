@@ -31,7 +31,6 @@ Fetch is stateless. Each request is evaluated against the current immutable rele
 | [configwire/configwire](https://github.com/configwire/configwire)                                      | Go single-binary server. PocketBase v0.40.4, SQLite, static Admin UI, SSE, purge. Load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md). |
 | [configwire/dart](https://github.com/configwire/dart) · [pub.dev](https://pub.dev/packages/configwire) | Pure-Dart client, Flutter-compatible. Bring-your-own `CacheStore`, SSE with 15-min poll fallback.          |
 | [configwire/flutter](https://github.com/configwire/flutter)                                            | Flutter companion: `SharedPreferences` cache + device-derived targeting over the pure-Dart client.          |
-| [configwire/cloud](https://github.com/configwire/cloud)                                                | Per-tenant hosting: one container + volume per customer behind Caddy, SSO ticket entry.                     |
 
 ## 60-second taste
 
@@ -72,7 +71,7 @@ final on = cw.getBool('launch_flag');
 ## Links
 
 - [Wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md) · [Security](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md) · [Key rotation](https://github.com/configwire/configwire/blob/main/docs/ROTATION.md)
-- [Dart client](https://github.com/configwire/dart) · [Flutter companion](https://github.com/configwire/flutter) · [Cloud hosting](https://github.com/configwire/cloud)
+- [Dart client](https://github.com/configwire/dart) · [Flutter companion](https://github.com/configwire/flutter)
 - Docker: `ghcr.io/configwire/configwire:latest`
 
 ---
