@@ -8,7 +8,7 @@ Self-hosted feature flags and remote config in a single Go binary on PocketBase.
 ![Docker](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)
 
 <p align="center">
-  <img src="https://github.com/configwire/configwire/blob/main/pb_public/img/banner.png?raw=true" alt="ConfigWire banner" width="800">
+  <img src="https://raw.githubusercontent.com/configwire/configwire/main/pb_public/img/banner.png" alt="ConfigWire banner" width="800">
 </p>
 
 ## How it works
@@ -18,34 +18,29 @@ flowchart LR
   SDK[Dart / Flutter SDK] -->|GET config<br/>ETag 304 + gzip| API[Fetch API]
   API --> PB[PocketBase<br/>immutable releases<br/>per-fetch eval]
   PB -->|SSE| SDK
-  SDK -->|POST events<br/>batched 60/min| ING[Events ingest]
+  SDK -->|POST events<br/>1..100/req, cap 2048| ING[Events ingest]
   ING --> STATS[Stats API<br/>exact 30d / rollup 90d]
 ```
 
-Fetch is stateless. Each request is evaluated against the current immutable release, then pushed live over SSE.
+Fetch is stateless. Each request is evaluated against the current immutable release; clients are notified live over SSE and refetch.
 
 ## Repositories
 
-| Repo | What it is |
-| ---- | ---------- |
-| [configwire/configwire](https://github.com/configwire/configwire) | Go single-binary server. PocketBase v0.40.4, SQLite, static Admin UI, SSE, purge. k6 p95 0.78ms at 100rps. |
-| [configwire/dart](https://github.com/configwire/dart) · [pub.dev](https://pub.dev/packages/configwire) | Pure-Dart client, Flutter-compatible. Bring-your-own `CacheStore`, SSE with 15-min poll fallback. |
+| Repo                                                                                                   | What it is                                                                                                 |
+| ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| [configwire/configwire](https://github.com/configwire/configwire)                                      | Go single-binary server. PocketBase v0.40.4, SQLite, static Admin UI, SSE, purge. Load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md). |
+| [configwire/dart](https://github.com/configwire/dart) · [pub.dev](https://pub.dev/packages/configwire) | Pure-Dart client, Flutter-compatible. Bring-your-own `CacheStore`, SSE with 15-min poll fallback.          |
+| [configwire/flutter](https://github.com/configwire/flutter)                                            | Flutter companion: `SharedPreferences` cache + device-derived targeting over the pure-Dart client.          |
+| [configwire/cloud](https://github.com/configwire/cloud)                                                | Per-tenant hosting: one container + volume per customer behind Caddy, SSO ticket entry.                     |
 
 ## 60-second taste
 
-Run the server:
-
-```bash
-docker run -d --name configwire \
-  -p 8090:8090 -v cw-data:/app/pb_data \
-  ghcr.io/configwire/configwire:latest
-# open http://localhost:8090
-```
+Run the server with Docker: see [Guides & Docs](https://configwire.com/guide.html) and the [server README](https://github.com/configwire/configwire).
 
 Fetch config:
 
 ```bash
-curl -H "X-ConfigWire-Key: <SDK_KEY>" \
+curl -H "X-ConfigWire-Key: YOUR_SDK_KEY" \
   "http://localhost:8090/api/v1/env/dev/config?uid=u123&platform=ios&appVersion=1.2.0"
 # {"version":1,"etag":"b41b62605c0df712","values":{"launch_flag":true},...}
 # Unchanged? Send If-None-Match: <etag> → 304 empty.
@@ -64,7 +59,7 @@ await cw.fetchAndActivate();
 final on = cw.getBool('launch_flag');
 ```
 
-> Full end-to-end (publish, keys, events, stats) lives in the [server README](https://github.com/configwire/configwire#quickstart-end-to-end-curl).
+> Full end-to-end (publish, keys, events, stats): see [Guides & Docs](https://configwire.com/guide.html) and the [wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md).
 
 ## Why ConfigWire
 
@@ -72,11 +67,12 @@ final on = cw.getBool('launch_flag');
 - **Immutable releases.** Explicit `publish` / `rollback`, every fetch pins `version` + `etag`.
 - **Per-fetch eval + targeting.** `uid`, `platform`, `appVersion`, `locale`, `country`, `attrs` (max 8192 bytes).
 - **Private by default.** Events carry `userHash` only — no raw IDs, no PII in flag values.
-- **Fast where it counts.** ETag `304`, gzip, p95 0.78ms at 100rps fetch + 50rps exposure (k6).
+- **Fast where it counts.** ETag `304`, gzip (load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md)).
 
 ## Links
 
 - [Wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md) · [Security](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md) · [Key rotation](https://github.com/configwire/configwire/blob/main/docs/ROTATION.md)
+- [Dart client](https://github.com/configwire/dart) · [Flutter companion](https://github.com/configwire/flutter) · [Cloud hosting](https://github.com/configwire/cloud)
 - Docker: `ghcr.io/configwire/configwire:latest`
 
 ---
