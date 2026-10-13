@@ -1,6 +1,6 @@
 # ConfigWire — Real-Time Remote Configuration
 
-Self-hosted feature flags and remote config in a single Go binary on PocketBase.
+Self-hosted feature flags, experiments, and remote config in a single Go binary on PocketBase — with Dart/Flutter SDKs.
 
 ![Go 1.27](https://img.shields.io/badge/go-1.27-00ADD8?logo=go&logoColor=white)
 [![pub package](https://img.shields.io/pub/v/configwire.svg)](https://pub.dev/packages/configwire)
@@ -28,8 +28,8 @@ Fetch is stateless. Each request is evaluated against the current immutable rele
 
 | Repo                                                                                                   | What it is                                                                                                 |
 | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| [configwire/configwire](https://github.com/configwire/configwire)                                      | Go single-binary server. PocketBase v0.40.4, SQLite, static Admin UI, SSE, purge. Load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md). |
-| [configwire/dart](https://github.com/configwire/dart) · [pub.dev](https://pub.dev/packages/configwire) | Pure-Dart client, Flutter-compatible. Bring-your-own `CacheStore`, SSE with 15-min poll fallback.          |
+| [configwire/configwire](https://github.com/configwire/configwire)                                      | Go single-binary server. PocketBase v0.40.4, SQLite, static Admin UI, SSE, experiments + variants, purge. Load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md). |
+| [configwire/dart](https://github.com/configwire/dart) · [pub.dev](https://pub.dev/packages/configwire) | Pure-Dart client (`^0.3.0`, Dart `>=3.12.0`), Flutter-compatible. Typed getters + `getVariant(s)`, bring-your-own `CacheStore`, SSE with 15-min poll fallback.          |
 | [configwire/flutter](https://github.com/configwire/flutter)                                            | Flutter companion: `SharedPreferences` cache + device-derived targeting over the pure-Dart client.          |
 
 ## 60-second taste
@@ -40,7 +40,7 @@ Fetch config:
 
 ```bash
 curl -H "X-ConfigWire-Key: YOUR_SDK_KEY" \
-  "http://localhost:8090/api/v1/env/dev/config?uid=u123&platform=ios&appVersion=1.2.0"
+  "http://localhost:8090/api/v1/env/dev/config?userHash=06c0a1fbb20ef076&platform=ios&appVersion=1.2.0"
 # {"version":1,"etag":"b41b62605c0df712","values":{"launch_flag":true},...}
 # Unchanged? Send If-None-Match: <etag> → 304 empty.
 ```
@@ -56,6 +56,7 @@ final cw = ConfigWire(
 await cw.ensureInitialized();
 await cw.fetchAndActivate();
 final on = cw.getBool('launch_flag');
+final arm = cw.getVariant('checkout'); // experiment arm, null when none
 ```
 
 > Full end-to-end (publish, keys, events, stats): see [Guides & Docs](https://configwire.com/guide.html) and the [wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md).
@@ -64,13 +65,15 @@ final on = cw.getBool('launch_flag');
 
 - **One binary + SQLite.** No Redis or Kafka — just a volume at `/app/pb_data`.
 - **Immutable releases.** Explicit `publish` / `rollback`, every fetch pins `version` + `etag`.
-- **Per-fetch eval + targeting.** `uid`, `platform`, `appVersion`, `locale`, `country`, `attrs` (max 8192 bytes).
-- **Private by default.** Events carry `userHash` only — no raw IDs, no PII in flag values.
+- **Per-fetch eval + targeting.** `userHash`, `platform`, `appVersion`, `locale`, `country`, `attrs` (max 8192 bytes).
+- **Experiments built in.** Weighted variants with sticky bucketing; `values` + `variants` per fetch, `getVariant(s)` on the SDK.
+- **Offline-first SDK.** In-memory view over defaults, `CacheStore` persistence, throttled fetch, live SSE + poll fallback.
+- **Private by default.** Events carry `userHash` only — no raw IDs, no PII in flag values. Raw events 30d, rollups 90d.
 - **Fast where it counts.** ETag `304`, gzip (load-gate results in [SECURITY](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md)).
 
 ## Links
 
-- [Wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md) · [Security](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md) · [Key rotation](https://github.com/configwire/configwire/blob/main/docs/ROTATION.md)
+- [Wire contract](https://github.com/configwire/configwire/blob/main/docs/CONTRACT.md) · [Security](https://github.com/configwire/configwire/blob/main/docs/SECURITY.md) · [Key rotation](https://github.com/configwire/configwire/blob/main/docs/ROTATION.md) · [Backups](https://github.com/configwire/configwire/blob/main/docs/BACKUPS.md)
 - [Dart client](https://github.com/configwire/dart) · [Flutter companion](https://github.com/configwire/flutter)
 - Docker: `ghcr.io/configwire/configwire:latest`
 
